@@ -6,7 +6,7 @@ const app = express();
 app.use(express.json());
 
 // Load env vars (must match Render names)
-const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const OPENAI_KEY = process.env.OPENAI_KEY;
 
 // webhook route
