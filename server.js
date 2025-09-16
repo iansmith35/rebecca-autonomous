@@ -5,8 +5,9 @@ const cron = require("node-cron");
 const app = express();
 app.use(express.json());
 
-const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const OPENAI_KEY = process.env.OPENAI_API_KEY;
+// Load env vars (must match Render names)
+const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
+const OPENAI_KEY = process.env.OPENAI_KEY;
 
 // webhook route
 app.post("/webhook", async (req, res) => {
@@ -23,11 +24,10 @@ app.post("/webhook", async (req, res) => {
       await sendTelegram(chatId, "⚠️ Something went wrong.");
     }
   }
-
-  res.sendStatus(200); // Always reply quickly so Telegram doesn't retry
+  res.sendStatus(200); // Always reply quickly so Telegram doesn’t retry
 });
 
-// OpenAI
+// OpenAI call
 async function callOpenAI(prompt) {
   const response = await axios.post(
     "https://api.openai.com/v1/chat/completions",
@@ -42,11 +42,10 @@ async function callOpenAI(prompt) {
       },
     }
   );
-
   return response.data.choices[0].message.content;
 }
 
-// Telegram
+// Telegram send
 async function sendTelegram(chatId, text) {
   await axios.post(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
     chat_id: chatId,
