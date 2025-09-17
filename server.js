@@ -1,11 +1,11 @@
-import 'dotenv/config';
-import express from 'express';
-import fetch from 'node-fetch';
+import express from "express";
+import fetch from "node-fetch";
 
 const app = express();
 app.use(express.json());
 
-const { PORT, OPENAI_API_KEY, TELEGRAM_BOT_TOKEN } = process.env;
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
 async function askRebecca(text) {
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -17,7 +17,7 @@ async function askRebecca(text) {
     body: JSON.stringify({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: "You are Rebecca, a helpful assistant." },
+        { role: "system", content: "You are Rebecca, the assistant." },
         { role: "user", content: text }
       ]
     })
@@ -26,15 +26,12 @@ async function askRebecca(text) {
   return data?.choices?.[0]?.message?.content || "No reply";
 }
 
-// Telegram webhook
 app.post("/telegram/webhook", async (req, res) => {
   const msg = req.body?.message;
   const chatId = msg?.chat?.id;
   const text = msg?.text;
 
-  if (!chatId || !text) {
-    return res.sendStatus(200);
-  }
+  if (!chatId || !text) return res.sendStatus(200);
 
   try {
     const reply = await askRebecca(text);
@@ -50,18 +47,8 @@ app.post("/telegram/webhook", async (req, res) => {
   res.sendStatus(200);
 });
 
-// Mini app endpoint
-app.post("/chat", async (req, res) => {
-  const { text } = req.body;
-  if (!text) return res.status(400).json({ error: "Missing text" });
-  try {
-    const reply = await askRebecca(text);
-    res.json({ reply });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
+// health check
 app.get("/health", (req, res) => res.json({ ok: true }));
 
-app.listen(PORT, () => console.log(`Listening on ${PORT}`));
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => console.log(`Running on ${PORT}`));
