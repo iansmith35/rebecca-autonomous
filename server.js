@@ -6,10 +6,13 @@ const axios = require("axios");
 const app = express();
 app.use(bodyParser.json());
 
-// === HARD-CODE YOUR TOKEN HERE ===
-const TELEGRAM_TOKEN = "8250011002:AAGZl0TRh9ZuAceAbJzzjnJrtSxiZB_0GaY";
+// === Environment Variables ===
+// Set these in Render → Environment
+const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const OPENAI_KEY = process.env.OPENAI_KEY;
+
 const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
-const WEBHOOK_URL = "https://rebecca-autonomous.onrender.com/webhook"; // replace with your Render URL
+const WEBHOOK_URL = "https://rebecca-autonomous.onrender.com/webhook"; // change if different
 
 // --- Set webhook automatically on startup ---
 async function setWebhook() {
@@ -23,24 +26,43 @@ async function setWebhook() {
   }
 }
 
-// --- Webhook route ---
-app.post("/webhook", async (req, res) => {
-  console.log("Incoming update:", JSON.stringify(req.body));
+// --- OpenAI call ---
+async function callOpenAI(prompt) {
+  try {
+    const response = await axios.post(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+      },
+      {
+        headers: {
+          "Authorization": `Bearer ${OPENAI_KEY}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response.data.choices[0].message.content.trim();
+  } catch (err) {
+    console.error("OpenAI error:", err.response?.data || err.message);
+    return "⚠️ I couldn’t reach my brain just now. Try again.";
+  }
+}
 
+// --- Telegram webhook route ---
+app.post("/webhook", async (req, res) => {
   if (req.body.message) {
     const chatId = req.body.message.chat.id;
     const text = req.body.message.text;
 
     try {
+      const aiReply = await callOpenAI(text);
       await axios.post(`${TELEGRAM_API}/sendMessage`, {
         chat_id: chatId,
-        text: `You said: ${text}`,
+        text: aiReply,
       });
     } catch (err) {
-      console.error(
-        "sendMessage error:",
-        err.response?.data || err.message
-      );
+      console.error("sendMessage error:", err.response?.data || err.message);
     }
   }
 
