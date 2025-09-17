@@ -1,92 +1,172 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Rebecca Mini-App</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: Arial, sans-serif; background:#f4f4f9; margin:0; padding:0; }
-    #chat { max-width: 600px; margin:20px auto; background:#fff; border-radius:10px;
-            box-shadow:0 2px 6px rgba(0,0,0,0.15); padding:20px; height:70vh; overflow-y:auto; }
-    .msg { margin:8px 0; padding:10px 15px; border-radius:8px; }
-    .user { background:#007bff; color:#fff; text-align:right; }
-    .ai { background:#eaeaea; color:#000; text-align:left; }
-    #controls { display:flex; justify-content:center; gap:10px; margin:20px auto; max-width:600px; }
-    #input { flex:1; padding:10px; border:1px solid #ccc; border-radius:5px; }
-    button { padding:10px 15px; border:none; border-radius:5px; cursor:pointer; }
-    #send { background:#28a745; color:#fff; }
-    #mic { background:#ff5722; color:#fff; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Roboto, sans-serif;
+      background: radial-gradient(circle at top, #1f0036, #000);
+      color: #fff;
+    }
+    header {
+      text-align: center;
+      padding: 1rem;
+      background: linear-gradient(90deg,#a855f7,#06b6d4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-size: 2rem;
+      font-weight: bold;
+    }
+    .app {
+      display: flex;
+      height: 90vh;
+    }
+    nav {
+      width: 250px;
+      background: rgba(255,255,255,0.05);
+      padding: 1rem;
+      overflow-y: auto;
+      border-right: 1px solid rgba(255,255,255,0.1);
+    }
+    nav h2 {
+      font-size: 1rem;
+      margin-bottom: .5rem;
+      text-transform: uppercase;
+      color: #a855f7;
+    }
+    nav ul {
+      list-style: none;
+      padding: 0;
+    }
+    nav li {
+      padding: .5rem;
+      margin-bottom: .5rem;
+      background: rgba(255,255,255,0.1);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    nav li:hover, nav li.active {
+      background: linear-gradient(90deg,#a855f7,#06b6d4);
+    }
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .messages {
+      flex: 1;
+      padding: 1rem;
+      overflow-y: auto;
+    }
+    .msg {
+      margin-bottom: 1rem;
+    }
+    .msg.user { text-align: right; }
+    .msg.user span {
+      background: #06b6d4;
+      padding: .5rem 1rem;
+      border-radius: 12px;
+      display: inline-block;
+    }
+    .msg.ai span {
+      background: #a855f7;
+      padding: .5rem 1rem;
+      border-radius: 12px;
+      display: inline-block;
+    }
+    .input-bar {
+      display: flex;
+      padding: 1rem;
+      background: rgba(255,255,255,0.05);
+    }
+    .input-bar input {
+      flex: 1;
+      padding: .8rem;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+    .input-bar button {
+      margin-left: .5rem;
+      padding: .8rem 1.2rem;
+      border: none;
+      border-radius: 6px;
+      background: linear-gradient(90deg,#a855f7,#06b6d4);
+      color: #fff;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
-
-  <div id="chat"></div>
-
-  <div id="controls">
-    <input type="text" id="input" placeholder="Type your message...">
-    <button id="send">Send</button>
-    <button id="mic">🎤</button>
+  <header>🤖 Rebecca Control Hub</header>
+  <div class="app">
+    <nav>
+      <h2>Rooms</h2>
+      <ul id="rooms">
+        <li class="active" data-room="general">General</li>
+        <li data-room="mail">📧 Mail Room</li>
+        <li data-room="calendar">📅 Calendar</li>
+        <li data-room="tasks">📋 Tasks</li>
+        <li data-room="projects">📂 Projects</li>
+      </ul>
+    </nav>
+    <main>
+      <div class="messages" id="messages"></div>
+      <div class="input-bar">
+        <input id="input" placeholder="Type or speak..." />
+        <button onclick="sendMessage()">Send</button>
+      </div>
+    </main>
   </div>
 
   <script>
-    const chatBox = document.getElementById('chat');
-    const input = document.getElementById('input');
-    const sendBtn = document.getElementById('send');
-    const micBtn = document.getElementById('mic');
+    let currentRoom = "general";
+    const rooms = document.querySelectorAll("#rooms li");
+    rooms.forEach(li => {
+      li.onclick = () => {
+        rooms.forEach(r => r.classList.remove("active"));
+        li.classList.add("active");
+        currentRoom = li.dataset.room;
+        document.getElementById("messages").innerHTML = "";
+        loadHistory();
+      };
+    });
 
-    function appendMessage(text, sender) {
-      const div = document.createElement('div');
-      div.classList.add('msg', sender);
-      div.textContent = text;
-      chatBox.appendChild(div);
-      chatBox.scrollTop = chatBox.scrollHeight;
+    function appendMessage(sender, text) {
+      const div = document.createElement("div");
+      div.className = "msg " + sender;
+      div.innerHTML = `<span>${text}</span>`;
+      document.getElementById("messages").appendChild(div);
+      document.getElementById("messages").scrollTop =
+        document.getElementById("messages").scrollHeight;
     }
 
     async function sendMessage() {
+      const input = document.getElementById("input");
       const text = input.value.trim();
       if (!text) return;
-      appendMessage(text, 'user');
-      input.value = '';
-      try {
-        const res = await fetch('/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: text })
-        });
-        const data = await res.json();
-        appendMessage(data.reply, 'ai');
-        speak(data.reply);
-      } catch (err) {
-        appendMessage('⚠️ Error talking to server.', 'ai');
-      }
+      appendMessage("user", text);
+      input.value = "";
+      const res = await fetch("/message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ room: currentRoom, text })
+      });
+      const data = await res.json();
+      appendMessage("ai", data.reply);
     }
 
-    sendBtn.addEventListener('click', sendMessage);
-    input.addEventListener('keypress', e => { if (e.key === 'Enter') sendMessage(); });
-
-    // Speech synthesis (UK female voice if available)
-    function speak(text) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      const voices = speechSynthesis.getVoices();
-      const ukFemale = voices.find(v => v.lang === 'en-GB' && v.name.toLowerCase().includes('female'));
-      if (ukFemale) utterance.voice = ukFemale;
-      speechSynthesis.speak(utterance);
+    async function loadHistory() {
+      const res = await fetch(`/history?room=${currentRoom}`);
+      const data = await res.json();
+      data.forEach(msg => appendMessage(msg.sender, msg.text));
     }
 
-    // Speech recognition
-    micBtn.addEventListener('click', () => {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) return alert("Speech recognition not supported.");
-      const recognition = new SpeechRecognition();
-      recognition.lang = "en-GB";
-      recognition.start();
-      recognition.onresult = (e) => {
-        const transcript = e.results[0][0].transcript;
-        input.value = transcript;
-        sendMessage();
-      };
-    });
+    loadHistory();
   </script>
-
 </body>
 </html>
