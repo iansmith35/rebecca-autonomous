@@ -27,7 +27,7 @@ async function askRebecca(text) {
   return data?.choices?.[0]?.message?.content || "No reply";
 }
 
-app.post("/telegram/webhook", async (req, res) => {
+app.post("/telegram/RebeccaRubeBot/webhook", async (req, res) => {
   const msg = req.body?.message;
   const chatId = msg?.chat?.id;
   const text = msg?.text;
@@ -49,7 +49,7 @@ app.post("/telegram/webhook", async (req, res) => {
 });
 
 // Health check route
-app.get("/health", (req, res) => res.json({ ok: true }));
+app.get("/RebeccaRubeBot/health", (req, res) => res.json({ ok: true }));
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`Running on ${PORT}`));
