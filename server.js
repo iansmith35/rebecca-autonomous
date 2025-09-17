@@ -1,25 +1,28 @@
 const express = require("express");
-const bodyParser = require("body-parser");
 const path = require("path");
+const bodyParser = require("body-parser");
+
+// Load environment variables
+const APP_MODE = process.env.APP_MODE || "miniapp";
 
 const app = express();
+const PORT = process.env.PORT || 10000;
+
+// Middleware
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-const PORT = process.env.PORT || 10000;
-
-// simple healthcheck
+// Mini-app route (frontend)
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// webhook endpoint for Telegram
-app.post(`/webhook/${process.env.TELEGRAM_BOT_TOKEN}`, (req, res) => {
-  require("./telegram").handleUpdate(req.body);
-  res.sendStatus(200);
-});
+// Telegram webhook route (separate logic in telegram.js)
+const telegramHandler = require("./telegram");
+app.post("/webhook", telegramHandler);
 
+// Start server
 app.listen(PORT, () => {
   console.log(`Rebecca running on port ${PORT}`);
-  console.log(`Primary URL: ${process.env.RENDER_EXTERNAL_URL || "http://localhost:" + PORT}`);
+  console.log(`Mode: ${APP_MODE}`);
 });
