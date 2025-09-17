@@ -1,30 +1,25 @@
 const express = require("express");
+const bodyParser = require("body-parser");
 const path = require("path");
 
 const app = express();
-const PORT = process.env.PORT || 10000;
-
-// Serve static files from /public
+app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-// Health check
-app.get("/health", (req, res) => {
-  res.json({ status: "ok", service: "Rebecca Autonomous System" });
-});
+const PORT = process.env.PORT || 10000;
 
-// Root route
+// simple healthcheck
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// Import Telegram bot logic if available
-try {
-  require("./telegram")(app);
-} catch (err) {
-  console.log("⚠️ Telegram module not loaded:", err.message);
-}
+// webhook endpoint for Telegram
+app.post(`/webhook/${process.env.TELEGRAM_BOT_TOKEN}`, (req, res) => {
+  require("./telegram").handleUpdate(req.body);
+  res.sendStatus(200);
+});
 
-// Start server
 app.listen(PORT, () => {
-  console.log(`✅ Rebecca server running on port ${PORT}`);
+  console.log(`Rebecca running on port ${PORT}`);
+  console.log(`Primary URL: ${process.env.RENDER_EXTERNAL_URL || "http://localhost:" + PORT}`);
 });
