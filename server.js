@@ -1,80 +1,72 @@
-// server.js
-import express from "express";
-import axios from "axios";
+const express = require("express");
+const bodyParser = require("body-parser");
+const axios = require("axios");
 
 const app = express();
-app.use(express.json());
+const PORT = process.env.PORT || 10000;
+
+// Middleware
+app.use(bodyParser.json());
 app.use(express.static("public"));
 
-const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
-const OPENAI_KEY = process.env.OPENAI_KEY; // or Rube key if proxied
-const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
+// Simple in-memory store for conversations per room
+const history = {
+  general: [],
+  mail: [],
+  calendar: [],
+  tasks: [],
+  projects: []
+};
 
-// Telegram webhook
-app.post("/webhook", async (req, res) => {
-  const msg = req.body.message;
-  if (!msg || !msg.text) return res.sendStatus(200);
+// === ROUTES ===
 
-  const chatId = msg.chat.id;
-  const text = msg.text;
-
+// POST /message → receive a user message and send to Roop
+app.post("/message", async (req, res) => {
   try {
-    const aiResponse = await axios.post(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        model: "gpt-4o-mini",
-        messages: [{ role: "user", content: text }]
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${OPENAI_KEY}`,
-          "Content-Type": "application/json"
-        }
+    const { room, text } = req.body;
+    if (!room || !text) {
+      return res.status(400).json({ error: "Room and text required" });
+    }
+
+    // Save user message to history
+    history[room] = history[room] || [];
+    history[room].push({ sender: "user", text });
+
+    // Forward to Roop (replace with your real Roop endpoint)
+    let replyText = "Default AI response (Roop not connected yet)";
+    try {
+      const response = await axios.post("https://rube.app/api/message", {
+        room,
+        text
+      });
+      if (response.data && response.data.reply) {
+        replyText = response.data.reply;
       }
-    );
+    } catch (err) {
+      console.error("Roop error:", err.message);
+      replyText = "⚠️ Could not reach Roop backend. Please try again later.";
+    }
 
-    const reply = aiResponse.data.choices[0].message.content;
-    await axios.post(`${TELEGRAM_API}/sendMessage`, {
-      chat_id: chatId,
-      text: reply
-    });
+    // Save AI reply to history
+    history[room].push({ sender: "ai", text: replyText });
+
+    res.json({ reply: replyText });
   } catch (err) {
-    console.error("Telegram handler failed:", err.message);
-  }
-
-  res.sendStatus(200);
-});
-
-// WebApp chat endpoint (Mini-App UI posts here)
-app.post("/chat", async (req, res) => {
-  const { message } = req.body;
-  if (!message) return res.json({ reply: "No message received." });
-
-  try {
-    const aiResponse = await axios.post(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        model: "gpt-4o-mini",
-        messages: [{ role: "user", content: message }]
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${OPENAI_KEY}`,
-          "Content-Type": "application/json"
-        }
-      }
-    );
-
-    const reply = aiResponse.data.choices[0].message.content;
-    res.json({ reply });
-  } catch (err) {
-    console.error("WebApp handler failed:", err.message);
-    res.json({ reply: "⚠️ Something went wrong talking to AI." });
+    console.error("Message error:", err.message);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// Render requires this PORT
-const PORT = process.env.PORT || 3000;
+// GET /history → return chat history for a room
+app.get("/history", (req, res) => {
+  const { room } = req.query;
+  if (!room) return res.status(400).json({ error: "Room required" });
+  res.json(history[room] || []);
+});
+
+// Start server
 app.listen(PORT, () => {
-  console.log(`Rebecca running on port ${PORT}`);
+  console.log("Rebecca running on port", PORT);
+  console.log("==> Your service is live 🚀");
+  console.log("==> Available at your primary URL");
 });
