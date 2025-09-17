@@ -1,62 +1,61 @@
 const axios = require("axios");
-const express = require("express");
-const bodyParser = require("body-parser");
 
-const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN; // make sure you set this in Render Environment
-const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
-const WEBHOOK_URL = `${process.env.RENDER_EXTERNAL_URL}/webhook/${TELEGRAM_TOKEN}`;
+module.exports = function (app) {
+  const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+  const OPENAI_KEY = process.env.OPENAI_KEY;
 
-// Create router so it can be mounted in server.js
-const router = express.Router();
-router.use(bodyParser.json());
+  if (!TELEGRAM_TOKEN) {
+    console.log("⚠️ No TELEGRAM_BOT_TOKEN set, skipping Telegram bot init.");
+    return;
+  }
 
-// Store chat history in memory
-const telegramHistory = {};
+  const TELEGRAM_URL = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
 
-// Webhook endpoint
-router.post(`/webhook/${TELEGRAM_TOKEN}`, async (req, res) => {
-  try {
-    const message = req.body.message;
-    if (!message || !message.text) return res.sendStatus(200);
+  // Webhook endpoint for Telegram
+  app.post(`/webhook/${TELEGRAM_TOKEN}`, express.json(), async (req, res) => {
+    const update = req.body;
 
-    const chatId = message.chat.id;
-    const userText = message.text;
+    if (update.message && update.message.text) {
+      const chatId = update.message.chat.id;
+      const userMessage = update.message.text;
 
-    // Save history
-    telegramHistory[chatId] = telegramHistory[chatId] || [];
-    telegramHistory[chatId].push({ sender: "user", text: userText });
+      console.log(`📩 Message from Telegram: ${userMessage}`);
 
-    // For now: simple echo + tag (later can route to Rube)
-    const replyText = `Rebecca (Telegram) heard you: "${userText}"`;
+      try {
+        // Send message to OpenAI
+        const aiResponse = await axios.post(
+          "https://api.openai.com/v1/chat/completions",
+          {
+            model: "gpt-4o-mini",
+            messages: [
+              { role: "system", content: "You are Rebecca, Ian’s assistant." },
+              { role: "user", content: userMessage },
+            ],
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${OPENAI_KEY}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
 
-    telegramHistory[chatId].push({ sender: "ai", text: replyText });
+        const reply =
+          aiResponse.data.choices[0].message.content ||
+          "⚠️ Sorry, I couldn’t generate a reply.";
 
-    await axios.post(`${TELEGRAM_API}/sendMessage`, {
-      chat_id: chatId,
-      text: replyText
-    });
+        // Send back to Telegram
+        await axios.post(`${TELEGRAM_URL}/sendMessage`, {
+          chat_id: chatId,
+          text: reply,
+        });
+      } catch (err) {
+        console.error("❌ Telegram handler error:", err.message);
+      }
+    }
 
     res.sendStatus(200);
-  } catch (err) {
-    console.error("Telegram webhook error:", err.message);
-    res.sendStatus(500);
-  }
-});
+  });
 
-// Helper to set webhook on startup
-async function setWebhook() {
-  try {
-    await axios.post(`${TELEGRAM_API}/setWebhook`, {
-      url: WEBHOOK_URL
-    });
-    console.log("✅ Telegram webhook set:", WEBHOOK_URL);
-  } catch (err) {
-    console.error("Failed to set Telegram webhook:", err.message);
-  }
-}
-
-// Initialise on load
-setWebhook();
-
-// Export router so server.js can use it
-module.exports = router;
+  console.log("✅ Telegram bot handler ready.");
+};
