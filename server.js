@@ -15,13 +15,14 @@ async function askRebecca(text) {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      model: "gpt-4o-mini",
+      model: "gpt-4-0314",
       messages: [
         { role: "system", content: "You are Rebecca, the assistant." },
         { role: "user", content: text }
       ]
     })
   });
+  
   const data = await res.json();
   return data?.choices?.[0]?.message?.content || "No reply";
 }
@@ -36,7 +37,7 @@ app.post("/telegram/webhook", async (req, res) => {
   try {
     const reply = await askRebecca(text);
     await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: "POST",
+      method: "POST", 
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ chat_id: chatId, text: reply })
     });
@@ -47,7 +48,7 @@ app.post("/telegram/webhook", async (req, res) => {
   res.sendStatus(200);
 });
 
-// health check
+// Health check route
 app.get("/health", (req, res) => res.json({ ok: true }));
 
 const PORT = process.env.PORT || 8080;
