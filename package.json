@@ -1,13 +1,19 @@
 {
-  "name": "rebecca-telegram",
+  "name": "rebecca-autonomous",
   "version": "1.0.0",
+  "description": "Minimalistic Telegram bot integrating with rube.app",
   "type": "module",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node --watch server.js"
   },
+  "keywords": ["telegram-bot", "rube.app", "autonomous", "rebecca"],
   "dependencies": {
     "express": "^4.19.2",
     "node-fetch": "^3.3.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

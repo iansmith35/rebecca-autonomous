@@ -4,82 +4,135 @@ import fetch from "node-fetch";
 const app = express();
 app.use(express.json());
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+// Environment variables
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const RUBE_API_URL = process.env.RUBE_API_URL || "https://api.rube.app";
+const RUBE_API_KEY = process.env.RUBE_API_KEY;
 
-async function askRebecca(text) {
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${OPENAI_API_KEY}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      model: "gpt-4-0314",
-      messages: [
-        { role: "system", content: "You are Rebecca, the assistant." },
-        { role: "user", content: text }
-      ]
-    })
-  });
-  
-  const data = await res.json();
-  return data?.choices?.[0]?.message?.content || "No reply";
+// Validate required environment variables
+if (!TELEGRAM_BOT_TOKEN) {
+  console.error("TELEGRAM_BOT_TOKEN environment variable is required");
+  process.exit(1);
 }
 
-app.post("/telegram/RebeccaRubeBot/webhook", async (req, res) => {
-  const msg = req.body?.message;
-  const chatId = msg?.chat?.id;
-  const text = msg?.text;
+if (!RUBE_API_KEY) {
+  console.error("RUBE_API_KEY environment variable is required");
+  process.exit(1);
+}
 
-  if (!chatId || !text) return res.sendStatus(200);
-
-  try {
-    const reply = await askRebecca(text);
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: "POST", 
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, text: reply })
-    });
-  } catch (err) {
-    console.error(err);
-  }
-
-  res.sendStatus(200);
-});
-
-// Health check route
-app.get("/RebeccaRubeBot/health", (req, res) => res.json({ ok: true }));
-
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => console.log(`Running on ${PORT}`));
-
+/**
+ * Sends a message to rube.app and returns the response
+ * @param {string} text - The user's message
+ * @returns {Promise<string>} - Rebecca's response
+ */
 async function askRebecca(text) {
   try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetch(`${RUBE_API_URL}/chat`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+        "Authorization": `Bearer ${RUBE_API_KEY}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "gpt-4-0314",
-        messages: [
-          { role: "system", content: "You are Rebecca, the assistant." },
-          { role: "user", content: text }
-        ]
+        message: text,
+        assistant: "rebecca"
       })
     });
 
-    if (!res.ok) {
-      console.error(`OpenAI API returned ${res.status}: ${await res.text()}`);
-      return "OpenAI API Error";
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Rube API error ${response.status}: ${errorText}`);
+      return "I'm experiencing technical difficulties. Please try again later.";
     }
 
-    const data = await res.json();
-    return data?.choices?.[0]?.message?.content || "No reply";
-  } catch (err) {
-    console.error("Error in askRebecca:", err);
-    return "Error processing request";
+    const data = await response.json();
+    return data?.reply || data?.message || "I'm not sure how to respond to that.";
+  } catch (error) {
+    console.error("Error communicating with rube.app:", error);
+    return "I'm experiencing technical difficulties. Please try again later.";
   }
 }
+
+/**
+ * Sends a message to a Telegram chat
+ * @param {string} chatId - The Telegram chat ID
+ * @param {string} text - The message to send
+ */
+async function sendTelegramMessage(chatId, text) {
+  try {
+    const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: text,
+        parse_mode: "Markdown"
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Telegram API error ${response.status}: ${errorText}`);
+    }
+  } catch (error) {
+    console.error("Error sending Telegram message:", error);
+  }
+}
+
+// Telegram webhook endpoint
+app.post("/webhook", async (req, res) => {
+  try {
+    const update = req.body;
+    const message = update?.message;
+    const chatId = message?.chat?.id;
+    const text = message?.text;
+
+    // Ignore non-text messages or missing data
+    if (!chatId || !text) {
+      return res.sendStatus(200);
+    }
+
+    // Log incoming message
+    console.log(`Received message from chat ${chatId}: ${text}`);
+
+    // Get response from Rebecca via rube.app
+    const reply = await askRebecca(text);
+
+    // Send response back to Telegram
+    await sendTelegramMessage(chatId, reply);
+
+    // Log outgoing message
+    console.log(`Sent reply to chat ${chatId}: ${reply}`);
+
+    res.sendStatus(200);
+  } catch (error) {
+    console.error("Error processing webhook:", error);
+    res.sendStatus(500);
+  }
+});
+
+// Health check endpoint
+app.get("/health", (req, res) => {
+  res.json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    service: "rebecca-autonomous"
+  });
+});
+
+// Root endpoint
+app.get("/", (req, res) => {
+  res.json({
+    service: "Rebecca Autonomous Telegram Bot",
+    status: "running",
+    description: "Minimalistic Telegram bot integrating with rube.app"
+  });
+});
+
+// Start server
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => {
+  console.log(`Rebecca Autonomous Bot running on port ${PORT}`);
+  console.log(`Health check available at: http://localhost:${PORT}/health`);
+  console.log(`Webhook endpoint: http://localhost:${PORT}/webhook`);
+});
