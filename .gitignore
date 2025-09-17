@@ -60,3 +60,19 @@ jspm_packages/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Deployment and build artifacts
+dist/
+build/
+.vercel
+.railway
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Screenshots and test artifacts
+screenshots/
+test-results/

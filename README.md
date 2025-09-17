@@ -1,6 +1,6 @@
 # Rebecca Autonomous Telegram Bot
 
-A minimalistic, robust Telegram bot that integrates with rube.app to provide autonomous AI assistance.
+A minimalistic, robust Telegram bot that integrates with rube.app to provide autonomous AI assistance, now featuring a comprehensive management dashboard.
 
 ## Features
 
@@ -9,6 +9,10 @@ A minimalistic, robust Telegram bot that integrates with rube.app to provide aut
 - **Rube.app Integration**: Direct integration with rube.app API for AI responses
 - **Telegram Webhook**: Efficient webhook-based message processing
 - **Health Monitoring**: Built-in health check endpoint for monitoring
+- **📊 Management Dashboard**: Real-time monitoring and control interface
+- **💬 Direct Chat Interface**: Test and interact with the bot directly
+- **📋 Feature Logs**: Real-time log viewing and management
+- **🔧 Feature Management**: Control and configure bot features
 
 ## Prerequisites
 
@@ -28,6 +32,22 @@ PORT=8080 (optional, defaults to 8080)
 ```
 
 ## Installation
+
+### Quick Deploy
+Use the included deployment script for easy setup:
+
+```bash
+# Make the script executable
+chmod +x deploy.sh
+
+# Run full deployment preparation
+./deploy.sh
+
+# Or start in development mode
+./deploy.sh dev
+```
+
+### Manual Installation
 
 1. Clone the repository
 2. Install dependencies:
@@ -50,9 +70,41 @@ npm run dev
 
 ## API Endpoints
 
-- `GET /` - Service information
+- `GET /` - Redirects to dashboard
+- `GET /dashboard` - Management dashboard interface
 - `GET /health` - Health check endpoint
 - `POST /webhook` - Telegram webhook endpoint
+- `GET /api/stats` - Dashboard statistics (JSON)
+- `GET /api/logs` - System logs (JSON)
+- `POST /api/chat` - Direct chat with bot (JSON)
+
+## Dashboard Features
+
+The Rebecca Autonomous Bot now includes a comprehensive management dashboard accessible at `/dashboard`:
+
+### 📊 Overview Tab
+- Real-time statistics (messages processed, uptime, active chats)
+- Health status monitoring
+- Recent activity feed
+- System status indicators
+
+### 📋 Feature Logs Tab
+- Real-time log viewing with filtering
+- Log level filtering (Info, Warning, Error)
+- Export logs functionality
+- Clear logs option
+
+### 💬 Copilot Chat Tab
+- Direct chat interface with the bot
+- Test bot responses in real-time
+- Chat history within the session
+- System message notifications
+
+### 🔧 Feature Management Tab
+- Monitor all bot features and their status
+- Quick access to configuration options
+- Feature-specific controls and settings
+- Add new feature requests
 
 ## Setting up the Telegram Webhook
 

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rebecca Autonomous Dashboard</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="dashboard-header">
+            <div class="header-content">
+                <h1><i class="fas fa-robot"></i> Rebecca Autonomous Dashboard</h1>
+                <div class="status-indicator">
+                    <span class="status-dot" id="statusDot"></span>
+                    <span id="statusText">Connecting...</span>
+                </div>
+            </div>
+        </header>
+
+        <nav class="dashboard-nav">
+            <ul>
+                <li><a href="#overview" class="nav-link active" data-tab="overview"><i class="fas fa-home"></i> Overview</a></li>
+                <li><a href="#logs" class="nav-link" data-tab="logs"><i class="fas fa-file-alt"></i> Feature Logs</a></li>
+                <li><a href="#chat" class="nav-link" data-tab="chat"><i class="fas fa-comments"></i> Copilot Chat</a></li>
+                <li><a href="#features" class="nav-link" data-tab="features"><i class="fas fa-cogs"></i> Feature Management</a></li>
+            </ul>
+        </nav>
+
+        <main class="dashboard-main">
+            <!-- Overview Tab -->
+            <div class="tab-content active" id="overview">
+                <div class="overview-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-message"></i></div>
+                        <div class="stat-info">
+                            <h3>Messages Processed</h3>
+                            <p class="stat-number" id="messageCount">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                        <div class="stat-info">
+                            <h3>Uptime</h3>
+                            <p class="stat-number" id="uptime">0h 0m</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-heartbeat"></i></div>
+                        <div class="stat-info">
+                            <h3>Health Status</h3>
+                            <p class="stat-number" id="healthStatus">Good</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-users"></i></div>
+                        <div class="stat-info">
+                            <h3>Active Chats</h3>
+                            <p class="stat-number" id="activeChats">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overview-section">
+                    <h2>Recent Activity</h2>
+                    <div class="activity-feed" id="activityFeed">
+                        <div class="activity-item">
+                            <div class="activity-time">Just now</div>
+                            <div class="activity-desc">Dashboard initialized</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logs Tab -->
+            <div class="tab-content" id="logs">
+                <div class="logs-header">
+                    <h2>Feature Logs</h2>
+                    <div class="log-controls">
+                        <select id="logLevel">
+                            <option value="all">All Levels</option>
+                            <option value="info">Info</option>
+                            <option value="warn">Warning</option>
+                            <option value="error">Error</option>
+                        </select>
+                        <button id="clearLogs" class="btn btn-secondary">Clear</button>
+                        <button id="exportLogs" class="btn btn-primary">Export</button>
+                    </div>
+                </div>
+                <div class="logs-container">
+                    <div class="log-viewer" id="logViewer">
+                        <div class="log-entry info">
+                            <span class="log-time">[2024-01-01 00:00:00]</span>
+                            <span class="log-level">INFO</span>
+                            <span class="log-message">Rebecca Autonomous Bot started</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Tab -->
+            <div class="tab-content" id="chat">
+                <div class="chat-container">
+                    <div class="chat-header">
+                        <h2>Direct Copilot Chat</h2>
+                        <div class="chat-status">
+                            <span class="status-indicator">
+                                <span class="status-dot online"></span>
+                                Ready
+                            </span>
+                        </div>
+                    </div>
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="chat-message system">
+                            <div class="message-content">
+                                Welcome to the Rebecca Autonomous Chat Interface. You can interact directly with the bot here for testing and management purposes.
+                            </div>
+                            <div class="message-time">System message</div>
+                        </div>
+                    </div>
+                    <div class="chat-input">
+                        <input type="text" id="chatInput" placeholder="Type your message..." />
+                        <button id="sendMessage" class="btn btn-primary">Send</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features Tab -->
+            <div class="tab-content" id="features">
+                <div class="features-header">
+                    <h2>Feature Management</h2>
+                    <button id="addFeature" class="btn btn-primary">Add Feature</button>
+                </div>
+                
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-header">
+                            <h3>Telegram Integration</h3>
+                            <div class="feature-status active">Active</div>
+                        </div>
+                        <p>Core Telegram bot functionality with webhook processing</p>
+                        <div class="feature-actions">
+                            <button class="btn btn-small">Configure</button>
+                            <button class="btn btn-small btn-secondary">Logs</button>
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-header">
+                            <h3>Rube.app Integration</h3>
+                            <div class="feature-status active">Active</div>
+                        </div>
+                        <p>AI assistant integration for intelligent responses</p>
+                        <div class="feature-actions">
+                            <button class="btn btn-small">Configure</button>
+                            <button class="btn btn-small btn-secondary">Test</button>
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-header">
+                            <h3>Health Monitoring</h3>
+                            <div class="feature-status active">Active</div>
+                        </div>
+                        <p>System health checks and monitoring endpoints</p>
+                        <div class="feature-actions">
+                            <button class="btn btn-small">View</button>
+                            <button class="btn btn-small btn-secondary">Configure</button>
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-header">
+                            <h3>Dashboard UI</h3>
+                            <div class="feature-status active">Active</div>
+                        </div>
+                        <p>Management interface for monitoring and control</p>
+                        <div class="feature-actions">
+                            <button class="btn btn-small">Settings</button>
+                            <button class="btn btn-small btn-secondary">Help</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/dashboard.js"></script>
+</body>
+</html>
