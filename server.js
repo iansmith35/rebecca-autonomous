@@ -53,3 +53,33 @@ app.get("/RebeccaRubeBot/health", (req, res) => res.json({ ok: true }));
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`Running on ${PORT}`));
+
+async function askRebecca(text) {
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "gpt-4-0314",
+        messages: [
+          { role: "system", content: "You are Rebecca, the assistant." },
+          { role: "user", content: text }
+        ]
+      })
+    });
+
+    if (!res.ok) {
+      console.error(`OpenAI API returned ${res.status}: ${await res.text()}`);
+      return "OpenAI API Error";
+    }
+
+    const data = await res.json();
+    return data?.choices?.[0]?.message?.content || "No reply";
+  } catch (err) {
+    console.error("Error in askRebecca:", err);
+    return "Error processing request";
+  }
+}
