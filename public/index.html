@@ -2,171 +2,127 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Rebecca Mini-App</title>
   <style>
     body {
       margin: 0;
-      font-family: 'Segoe UI', Roboto, sans-serif;
-      background: radial-gradient(circle at top, #1f0036, #000);
+      font-family: "Arial", sans-serif;
+      background: #0d0d0d;
       color: #fff;
-    }
-    header {
-      text-align: center;
-      padding: 1rem;
-      background: linear-gradient(90deg,#a855f7,#06b6d4);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      font-size: 2rem;
-      font-weight: bold;
-    }
-    .app {
-      display: flex;
-      height: 90vh;
-    }
-    nav {
-      width: 250px;
-      background: rgba(255,255,255,0.05);
-      padding: 1rem;
-      overflow-y: auto;
-      border-right: 1px solid rgba(255,255,255,0.1);
-    }
-    nav h2 {
-      font-size: 1rem;
-      margin-bottom: .5rem;
-      text-transform: uppercase;
-      color: #a855f7;
-    }
-    nav ul {
-      list-style: none;
-      padding: 0;
-    }
-    nav li {
-      padding: .5rem;
-      margin-bottom: .5rem;
-      background: rgba(255,255,255,0.1);
-      border-radius: 6px;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-    nav li:hover, nav li.active {
-      background: linear-gradient(90deg,#a855f7,#06b6d4);
-    }
-    main {
-      flex: 1;
       display: flex;
       flex-direction: column;
+      height: 100vh;
     }
-    .messages {
+    #chat {
       flex: 1;
-      padding: 1rem;
+      padding: 15px;
       overflow-y: auto;
+      border-bottom: 1px solid #333;
     }
     .msg {
-      margin-bottom: 1rem;
+      margin: 5px 0;
+      padding: 10px;
+      border-radius: 8px;
+      max-width: 70%;
     }
-    .msg.user { text-align: right; }
-    .msg.user span {
-      background: #06b6d4;
-      padding: .5rem 1rem;
-      border-radius: 12px;
-      display: inline-block;
+    .user {
+      background: #00f5d4;
+      color: #000;
+      align-self: flex-end;
     }
-    .msg.ai span {
-      background: #a855f7;
-      padding: .5rem 1rem;
-      border-radius: 12px;
-      display: inline-block;
-    }
-    .input-bar {
-      display: flex;
-      padding: 1rem;
-      background: rgba(255,255,255,0.05);
-    }
-    .input-bar input {
-      flex: 1;
-      padding: .8rem;
-      border: none;
-      border-radius: 6px;
-      font-size: 1rem;
-    }
-    .input-bar button {
-      margin-left: .5rem;
-      padding: .8rem 1.2rem;
-      border: none;
-      border-radius: 6px;
-      background: linear-gradient(90deg,#a855f7,#06b6d4);
+    .ai {
+      background: #6930c3;
       color: #fff;
+      align-self: flex-start;
+    }
+    #input-area {
+      display: flex;
+      padding: 10px;
+      background: #1a1a1a;
+    }
+    #msg {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+    }
+    button {
+      margin-left: 10px;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 8px;
+      background: #00f5d4;
       cursor: pointer;
+    }
+    button:hover {
+      background: #06d6a0;
     }
   </style>
 </head>
 <body>
-  <header>🤖 Rebecca Control Hub</header>
-  <div class="app">
-    <nav>
-      <h2>Rooms</h2>
-      <ul id="rooms">
-        <li class="active" data-room="general">General</li>
-        <li data-room="mail">📧 Mail Room</li>
-        <li data-room="calendar">📅 Calendar</li>
-        <li data-room="tasks">📋 Tasks</li>
-        <li data-room="projects">📂 Projects</li>
-      </ul>
-    </nav>
-    <main>
-      <div class="messages" id="messages"></div>
-      <div class="input-bar">
-        <input id="input" placeholder="Type or speak..." />
-        <button onclick="sendMessage()">Send</button>
-      </div>
-    </main>
+  <div id="chat"></div>
+  <div id="input-area">
+    <input id="msg" type="text" placeholder="Type your message..." />
+    <button onclick="sendMsg()">Send</button>
+    <button onclick="toggleVoice()">🎤</button>
   </div>
 
   <script>
-    let currentRoom = "general";
-    const rooms = document.querySelectorAll("#rooms li");
-    rooms.forEach(li => {
-      li.onclick = () => {
-        rooms.forEach(r => r.classList.remove("active"));
-        li.classList.add("active");
-        currentRoom = li.dataset.room;
-        document.getElementById("messages").innerHTML = "";
-        loadHistory();
-      };
-    });
+    const chatDiv = document.getElementById("chat");
+    const input = document.getElementById("msg");
+    let recognition;
+    let synth = window.speechSynthesis;
 
-    function appendMessage(sender, text) {
+    function appendMsg(text, cls) {
       const div = document.createElement("div");
-      div.className = "msg " + sender;
-      div.innerHTML = `<span>${text}</span>`;
-      document.getElementById("messages").appendChild(div);
-      document.getElementById("messages").scrollTop =
-        document.getElementById("messages").scrollHeight;
+      div.className = "msg " + cls;
+      div.textContent = text;
+      chatDiv.appendChild(div);
+      chatDiv.scrollTop = chatDiv.scrollHeight;
     }
 
-    async function sendMessage() {
-      const input = document.getElementById("input");
+    async function sendMsg() {
       const text = input.value.trim();
       if (!text) return;
-      appendMessage("user", text);
+      appendMsg(text, "user");
       input.value = "";
-      const res = await fetch("/message", {
+
+      const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ room: currentRoom, text })
+        body: JSON.stringify({ message: text }),
       });
       const data = await res.json();
-      appendMessage("ai", data.reply);
+      appendMsg(data.reply, "ai");
+      speak(data.reply);
     }
 
-    async function loadHistory() {
-      const res = await fetch(`/history?room=${currentRoom}`);
-      const data = await res.json();
-      data.forEach(msg => appendMessage(msg.sender, msg.text));
+    // Voice recognition
+    function toggleVoice() {
+      if (!recognition) {
+        recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = "en-GB";
+        recognition.continuous = true;
+        recognition.interimResults = false;
+        recognition.onresult = (e) => {
+          const last = e.results[e.results.length - 1][0].transcript;
+          input.value = last;
+          sendMsg();
+        };
+      }
+      if (recognition.running) {
+        recognition.stop();
+      } else {
+        recognition.start();
+      }
     }
 
-    loadHistory();
+    // Text to speech
+    function speak(text) {
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = "en-GB";
+      synth.speak(utter);
+    }
   </script>
 </body>
 </html>
