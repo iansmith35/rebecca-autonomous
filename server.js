@@ -1,72 +1,68 @@
-import express from "express";
-import bodyParser from "body-parser";
-import fetch from "node-fetch";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const express = require("express");
+const axios = require("axios");
+const cron = require("node-cron");
+const path = require("path");
 
 const app = express();
-app.use(bodyParser.json());
+app.use(express.json());
 
-// ✅ Load environment variables
-const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN; 
-const OPENAI_KEY = process.env.OPENAI_KEY; 
+// Load env vars
+const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const OPENAI_KEY = process.env.OPENAI_KEY;
 
-const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
-const WEBHOOK_PATH = `/webhook/${TELEGRAM_TOKEN}`;
+// Serve static files from /public
+app.use(express.static(path.join(__dirname, "public")));
 
-// ---- Serve Mini-App UI ----
-app.use("/miniapp", express.static(path.join(__dirname, "public")));
+// Root route (loads index.html automatically)
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
 
-// ---- Telegram Webhook ----
-app.post(WEBHOOK_PATH, async (req, res) => {
+// Webhook route for Telegram
+app.post("/webhook", async (req, res) => {
   const message = req.body.message;
-  if (!message || !message.text) return res.sendStatus(200);
+  if (message && message.text) {
+    const chatId = message.chat.id;
+    const text = message.text;
 
-  const chatId = message.chat.id;
-  const userText = message.text;
-
-  try {
-    // Forward message to OpenAI (Rube’s brain)
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${OPENAI_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: "You are Rebecca, Ian’s witty, flirty, but professional AI assistant." },
-          { role: "user", content: userText }
-        ]
-      })
-    });
-
-    const data = await response.json();
-    const aiReply = data.choices?.[0]?.message?.content || "Sorry, I hit a snag.";
-
-    // Send AI reply back to Telegram
-    await fetch(`${TELEGRAM_API}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, text: aiReply })
-    });
-  } catch (err) {
-    console.error("Error:", err);
+    try {
+      const reply = await callOpenAI(text);
+      await sendTelegram(chatId, reply);
+    } catch (err) {
+      console.error("Error:", err.message);
+      await sendTelegram(chatId, "⚠️ Something went wrong.");
+    }
   }
-
   res.sendStatus(200);
 });
 
-// ---- Health check ----
-app.get("/", (req, res) => {
-  res.send("Rebecca is online 🚀");
-});
+// OpenAI call
+async function callOpenAI(prompt) {
+  const response = await axios.post(
+    "https://api.openai.com/v1/chat/completions",
+    {
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
+    },
+    {
+      headers: {
+        "Authorization": `Bearer ${OPENAI_KEY}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+  return response.data.choices[0].message.content;
+}
 
-// ---- Start Server ----
+// Telegram sender
+async function sendTelegram(chatId, text) {
+  await axios.post(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+    chat_id: chatId,
+    text: text,
+  });
+}
+
+// Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
