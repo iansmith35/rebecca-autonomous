@@ -1,77 +1,73 @@
-// server.js
-const express = require("express");
-const bodyParser = require("body-parser");
-const axios = require("axios");
+import express from "express";
+import bodyParser from "body-parser";
+import fetch from "node-fetch";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(bodyParser.json());
 
-// === Environment Variables ===
-// Set these in Render → Environment
-const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const OPENAI_KEY = process.env.OPENAI_KEY;
+// ✅ Load environment variables
+const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN; 
+const OPENAI_KEY = process.env.OPENAI_KEY; 
 
 const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
-const WEBHOOK_URL = "https://rebecca-autonomous.onrender.com/webhook"; // change if different
+const WEBHOOK_PATH = `/webhook/${TELEGRAM_TOKEN}`;
 
-// --- Set webhook automatically on startup ---
-async function setWebhook() {
-  try {
-    const res = await axios.get(
-      `${TELEGRAM_API}/setWebhook?url=${WEBHOOK_URL}`
-    );
-    console.log("Webhook setup:", res.data);
-  } catch (err) {
-    console.error("Failed to set webhook:", err.response?.data || err.message);
-  }
-}
+// ---- Serve Mini-App UI ----
+app.use("/miniapp", express.static(path.join(__dirname, "public")));
 
-// --- OpenAI call ---
-async function callOpenAI(prompt) {
+// ---- Telegram Webhook ----
+app.post(WEBHOOK_PATH, async (req, res) => {
+  const message = req.body.message;
+  if (!message || !message.text) return res.sendStatus(200);
+
+  const chatId = message.chat.id;
+  const userText = message.text;
+
   try {
-    const response = await axios.post(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        model: "gpt-4o-mini",
-        messages: [{ role: "user", content: prompt }],
+    // Forward message to OpenAI (Rube’s brain)
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENAI_KEY}`,
+        "Content-Type": "application/json"
       },
-      {
-        headers: {
-          "Authorization": `Bearer ${OPENAI_KEY}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    return response.data.choices[0].message.content.trim();
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "You are Rebecca, Ian’s witty, flirty, but professional AI assistant." },
+          { role: "user", content: userText }
+        ]
+      })
+    });
+
+    const data = await response.json();
+    const aiReply = data.choices?.[0]?.message?.content || "Sorry, I hit a snag.";
+
+    // Send AI reply back to Telegram
+    await fetch(`${TELEGRAM_API}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text: aiReply })
+    });
   } catch (err) {
-    console.error("OpenAI error:", err.response?.data || err.message);
-    return "⚠️ I couldn’t reach my brain just now. Try again.";
-  }
-}
-
-// --- Telegram webhook route ---
-app.post("/webhook", async (req, res) => {
-  if (req.body.message) {
-    const chatId = req.body.message.chat.id;
-    const text = req.body.message.text;
-
-    try {
-      const aiReply = await callOpenAI(text);
-      await axios.post(`${TELEGRAM_API}/sendMessage`, {
-        chat_id: chatId,
-        text: aiReply,
-      });
-    } catch (err) {
-      console.error("sendMessage error:", err.response?.data || err.message);
-    }
+    console.error("Error:", err);
   }
 
   res.sendStatus(200);
 });
 
-// --- Start server ---
+// ---- Health check ----
+app.get("/", (req, res) => {
+  res.send("Rebecca is online 🚀");
+});
+
+// ---- Start Server ----
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, async () => {
-  console.log(`Rebecca running on port ${PORT}`);
-  await setWebhook();
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
