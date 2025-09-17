@@ -1,5 +1,5 @@
 {
-  "name": "rebecca-autonomous",
+  "name": "rebecca-telegram",
   "version": "1.0.0",
   "type": "module",
   "main": "server.js",
@@ -8,7 +8,6 @@
   },
   "dependencies": {
     "express": "^4.19.2",
-    "node-fetch": "^3.3.2",
-    "dotenv": "^16.4.5"
+    "node-fetch": "^3.3.2"
   }
 }
