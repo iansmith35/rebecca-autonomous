@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rebecca Autonomous - Dashboard</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="header">
+        <h1>Rebecca Autonomous Dashboard</h1>
+        <div class="header-controls">
+            <span id="status-indicator" class="status-indicator">●</span>
+            <span id="status-text">Connected</span>
+            <button id="logoutBtn" class="logout-btn">Logout</button>
+        </div>
+    </div>
+    
+    <div class="main-content">
+        <div class="sidebar">
+            <nav>
+                <ul>
+                    <li><a href="#overview" class="nav-link active">Overview</a></li>
+                    <li><a href="#dev" class="nav-link">/dev Dashboard</a></li>
+                    <li><a href="#logs" class="nav-link">Live Logs</a></li>
+                    <li><a href="#chat" class="nav-link">Copilot Chat</a></li>
+                </ul>
+            </nav>
+        </div>
+        
+        <div class="content">
+            <!-- Overview Section -->
+            <div id="overview" class="section active">
+                <h2>System Overview</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Bot Status</h3>
+                        <p id="bot-status">Running</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Messages Processed</h3>
+                        <p id="message-count">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Uptime</h3>
+                        <p id="uptime">--</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>API Status</h3>
+                        <p id="api-status">Connected</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Dev Dashboard Section -->
+            <div id="dev" class="section">
+                <h2>/dev Dashboard</h2>
+                <div class="dev-grid">
+                    <div class="feature-card">
+                        <h3>Live Updates</h3>
+                        <div id="live-updates" class="live-feed">
+                            <p>Waiting for updates...</p>
+                        </div>
+                    </div>
+                    <div class="feature-card">
+                        <h3>System Health</h3>
+                        <div id="health-status">
+                            <div class="health-item">
+                                <span>Database:</span>
+                                <span class="status-ok">OK</span>
+                            </div>
+                            <div class="health-item">
+                                <span>API Connection:</span>
+                                <span class="status-ok">OK</span>
+                            </div>
+                            <div class="health-item">
+                                <span>Telegram Webhook:</span>
+                                <span class="status-ok">OK</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Logs Section -->
+            <div id="logs" class="section">
+                <h2>Live Logs</h2>
+                <div class="logs-container">
+                    <div class="logs-header">
+                        <button id="clearLogs">Clear Logs</button>
+                        <label>
+                            <input type="checkbox" id="autoScroll" checked> Auto-scroll
+                        </label>
+                    </div>
+                    <div id="logs-output" class="logs-output"></div>
+                </div>
+            </div>
+            
+            <!-- Chat Section -->
+            <div id="chat" class="section">
+                <h2>Copilot Chat</h2>
+                <div class="chat-container">
+                    <div id="chat-messages" class="chat-messages"></div>
+                    <div class="chat-input-container">
+                        <input type="text" id="chat-input" placeholder="Ask Rebecca a question..." />
+                        <button id="send-chat">Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/js/dashboard.js"></script>
+</body>
+</html>
