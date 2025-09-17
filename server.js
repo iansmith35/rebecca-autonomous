@@ -1,72 +1,55 @@
+// server.js
 const express = require("express");
+const bodyParser = require("body-parser");
 const axios = require("axios");
-const cron = require("node-cron");
 
 const app = express();
-app.use(express.json());
+app.use(bodyParser.json());
 
-// Load env vars (must match Render names)
-const TELEGRAM_TOKEN = TELEGRAM_BOT_TOKEN
-const OPENAI_KEY = process.env.OPENAI_KEY;
+// === HARD-CODE YOUR TOKEN HERE ===
+const TELEGRAM_TOKEN = "8250011002:AAGZl0TRh9ZuAceAbJzzjnJrtSxiZB_0GaY";
+const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
+const WEBHOOK_URL = "https://rebecca-autonomous.onrender.com/webhook"; // replace with your Render URL
 
-// webhook route
+// --- Set webhook automatically on startup ---
+async function setWebhook() {
+  try {
+    const res = await axios.get(
+      `${TELEGRAM_API}/setWebhook?url=${WEBHOOK_URL}`
+    );
+    console.log("Webhook setup:", res.data);
+  } catch (err) {
+    console.error("Failed to set webhook:", err.response?.data || err.message);
+  }
+}
+
+// --- Webhook route ---
 app.post("/webhook", async (req, res) => {
-  const message = req.body.message;
-  if (message && message.text) {
-    const chatId = message.chat.id;
-    const text = message.text;
+  console.log("Incoming update:", JSON.stringify(req.body));
+
+  if (req.body.message) {
+    const chatId = req.body.message.chat.id;
+    const text = req.body.message.text;
 
     try {
-      const reply = await callOpenAI(text);
-      await sendTelegram(chatId, reply);
+      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+        chat_id: chatId,
+        text: `You said: ${text}`,
+      });
     } catch (err) {
-      console.error("Error:", err.message);
-      await sendTelegram(chatId, "⚠️ Something went wrong.");
+      console.error(
+        "sendMessage error:",
+        err.response?.data || err.message
+      );
     }
   }
-  res.sendStatus(200); // Always reply quickly so Telegram doesn’t retry
+
+  res.sendStatus(200);
 });
 
-// OpenAI call
-async function callOpenAI(prompt) {
-  const response = await axios.post(
-    "https://api.openai.com/v1/chat/completions",
-    {
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: prompt }],
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${OPENAI_KEY}`,
-        "Content-Type": "application/json",
-      },
-    }
-  );
-  return response.data.choices[0].message.content;
-}
-
-// Telegram send
-async function sendTelegram(chatId, text) {
-  await axios.post(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
-    chat_id: chatId,
-    text,
-  });
-}
-
-// health check
-app.get("/rebecca/health", (req, res) => {
-  res.json({
-    status: "autonomous_active",
-    heartbeat: 1,
-    uptime: process.uptime(),
-  });
-});
-
-// cron heartbeat
-cron.schedule("* * * * *", () => {
-  console.log("Heartbeat:", new Date().toISOString());
-});
-
-// start server
+// --- Start server ---
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Rebecca running on ${PORT}`));
+app.listen(PORT, async () => {
+  console.log(`Rebecca running on port ${PORT}`);
+  await setWebhook();
+});
