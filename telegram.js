@@ -1,61 +1,53 @@
 const axios = require("axios");
 
-module.exports = function (app) {
-  const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-  const OPENAI_KEY = process.env.OPENAI_KEY;
+const TELEGRAM_API = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}`;
+const OPENAI_KEY = process.env.OPENAI_KEY;
 
-  if (!TELEGRAM_TOKEN) {
-    console.log("⚠️ No TELEGRAM_BOT_TOKEN set, skipping Telegram bot init.");
-    return;
+// send message back to Telegram user
+async function sendMessage(chatId, text) {
+  try {
+    await axios.post(`${TELEGRAM_API}/sendMessage`, {
+      chat_id: chatId,
+      text,
+    });
+  } catch (err) {
+    console.error("Error sending Telegram message:", err.message);
   }
+}
 
-  const TELEGRAM_URL = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
+// process incoming Telegram update
+async function handleUpdate(update) {
+  if (!update.message || !update.message.text) return;
 
-  // Webhook endpoint for Telegram
-  app.post(`/webhook/${TELEGRAM_TOKEN}`, express.json(), async (req, res) => {
-    const update = req.body;
+  const chatId = update.message.chat.id;
+  const userText = update.message.text;
 
-    if (update.message && update.message.text) {
-      const chatId = update.message.chat.id;
-      const userMessage = update.message.text;
-
-      console.log(`📩 Message from Telegram: ${userMessage}`);
-
-      try {
-        // Send message to OpenAI
-        const aiResponse = await axios.post(
-          "https://api.openai.com/v1/chat/completions",
-          {
-            model: "gpt-4o-mini",
-            messages: [
-              { role: "system", content: "You are Rebecca, Ian’s assistant." },
-              { role: "user", content: userMessage },
-            ],
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${OPENAI_KEY}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        const reply =
-          aiResponse.data.choices[0].message.content ||
-          "⚠️ Sorry, I couldn’t generate a reply.";
-
-        // Send back to Telegram
-        await axios.post(`${TELEGRAM_URL}/sendMessage`, {
-          chat_id: chatId,
-          text: reply,
-        });
-      } catch (err) {
-        console.error("❌ Telegram handler error:", err.message);
+  try {
+    // call OpenAI
+    const response = await axios.post(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "You are Rebecca, an AI assistant." },
+          { role: "user", content: userText }
+        ],
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${OPENAI_KEY}`,
+        },
       }
-    }
+    );
 
-    res.sendStatus(200);
-  });
+    const reply = response.data.choices[0].message.content;
+    await sendMessage(chatId, reply);
 
-  console.log("✅ Telegram bot handler ready.");
-};
+  } catch (err) {
+    console.error("Error with OpenAI:", err.message);
+    await sendMessage(chatId, "⚠️ Sorry, I hit an error. Try again.");
+  }
+}
+
+module.exports = { handleUpdate };
