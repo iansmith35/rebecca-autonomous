@@ -60,3 +60,11 @@ jspm_packages/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Temporary files
+/tmp/
+temp/
+
+# Build artifacts
+dist/
+build/

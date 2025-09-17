@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rebecca Autonomous - /dev Dashboard</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .dev-banner {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .dev-banner h1 {
+            color: white;
+            margin-bottom: 0.5rem;
+        }
+        .quick-access {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .quick-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        .quick-card h3 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            text-decoration: none;
+            display: inline-block;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <div class="dev-banner">
+        <h1>/dev Dashboard</h1>
+        <p>Rebecca Autonomous Development Environment</p>
+        <p>Quick access to development tools and monitoring</p>
+    </div>
+    
+    <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 2rem;">
+        <div class="quick-access">
+            <div class="quick-card">
+                <h3>🏠 Main Dashboard</h3>
+                <p>Access the full Rebecca Autonomous dashboard with all features</p>
+                <a href="/dashboard.html" class="btn-primary">Open Dashboard</a>
+            </div>
+            
+            <div class="quick-card">
+                <h3>🔐 Login</h3>
+                <p>Authentication required for all dashboard access</p>
+                <a href="/" class="btn-primary">Login Page</a>
+            </div>
+            
+            <div class="quick-card">
+                <h3>📊 Health Check</h3>
+                <p>System health and status monitoring</p>
+                <a href="/health" class="btn-primary" target="_blank">Health API</a>
+            </div>
+            
+            <div class="quick-card">
+                <h3>🤖 Rebecca Chat</h3>
+                <p>Direct access to Rebecca AI assistant</p>
+                <p><small>Available after login in main dashboard</small></p>
+            </div>
+            
+            <div class="quick-card">
+                <h3>📝 Live Logs</h3>
+                <p>Real-time system logs and monitoring</p>
+                <p><small>Available after login in main dashboard</small></p>
+            </div>
+            
+            <div class="quick-card">
+                <h3>⚡ Live Updates</h3>
+                <p>System status and feature monitoring</p>
+                <p><small>Available after login in main dashboard</small></p>
+            </div>
+        </div>
+        
+        <div class="feature-card" style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+            <h3>🚀 Quick Start</h3>
+            <ol>
+                <li>Navigate to the <a href="/">login page</a></li>
+                <li>Use credentials: <code>admin</code> / <code>rebecca2024</code></li>
+                <li>Access the <a href="/dashboard.html">main dashboard</a></li>
+                <li>Explore live logs, chat with Rebecca, and monitor system status</li>
+            </ol>
+            
+            <h4>Available Features:</h4>
+            <ul>
+                <li>✅ Hardcoded authentication system</li>
+                <li>✅ Live system logs with real-time streaming</li>
+                <li>✅ Copilot chat powered by rube.app integration</li>
+                <li>✅ System health monitoring and stats</li>
+                <li>✅ Live feature updates and notifications</li>
+                <li>✅ Responsive design for all devices</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
