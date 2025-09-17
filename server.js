@@ -1,28 +1,67 @@
-const express = require("express");
-const path = require("path");
-const bodyParser = require("body-parser");
-
-// Load environment variables
-const APP_MODE = process.env.APP_MODE || "miniapp";
+import 'dotenv/config';
+import express from 'express';
+import fetch from 'node-fetch';
 
 const app = express();
-const PORT = process.env.PORT || 10000;
+app.use(express.json());
 
-// Middleware
-app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, "public")));
+const { PORT, OPENAI_API_KEY, TELEGRAM_BOT_TOKEN } = process.env;
 
-// Mini-app route (frontend)
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+async function askRebecca(text) {
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${OPENAI_API_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: "You are Rebecca, a helpful assistant." },
+        { role: "user", content: text }
+      ]
+    })
+  });
+  const data = await res.json();
+  return data?.choices?.[0]?.message?.content || "No reply";
+}
+
+// Telegram webhook
+app.post("/telegram/webhook", async (req, res) => {
+  const msg = req.body?.message;
+  const chatId = msg?.chat?.id;
+  const text = msg?.text;
+
+  if (!chatId || !text) {
+    return res.sendStatus(200);
+  }
+
+  try {
+    const reply = await askRebecca(text);
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text: reply })
+    });
+  } catch (err) {
+    console.error(err);
+  }
+
+  res.sendStatus(200);
 });
 
-// Telegram webhook route (separate logic in telegram.js)
-const telegramHandler = require("./telegram");
-app.post("/webhook", telegramHandler);
-
-// Start server
-app.listen(PORT, () => {
-  console.log(`Rebecca running on port ${PORT}`);
-  console.log(`Mode: ${APP_MODE}`);
+// Mini app endpoint
+app.post("/chat", async (req, res) => {
+  const { text } = req.body;
+  if (!text) return res.status(400).json({ error: "Missing text" });
+  try {
+    const reply = await askRebecca(text);
+    res.json({ reply });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
+
+app.get("/health", (req, res) => res.json({ ok: true }));
+
+app.listen(PORT, () => console.log(`Listening on ${PORT}`));
