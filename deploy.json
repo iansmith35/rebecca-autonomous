@@ -1,0 +1,17 @@
+{
+  "name": "rebecca-autonomous",
+  "version": "1.0.0",
+  "description": "Rebecca Autonomous Telegram Bot with Dashboard",
+  "main": "server.js",
+  "buildCommand": "npm run build",
+  "startCommand": "npm start",
+  "envVars": [
+    "TELEGRAM_BOT_TOKEN",
+    "RUBE_API_KEY",
+    "RUBE_API_URL",
+    "PORT"
+  ],
+  "healthCheck": "/health",
+  "dashboard": "/dashboard",
+  "staticFiles": "/public"
+}
