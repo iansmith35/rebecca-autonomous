@@ -1,128 +1,23 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Rebecca Mini-App</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: "Arial", sans-serif;
-      background: #0d0d0d;
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-    }
-    #chat {
-      flex: 1;
-      padding: 15px;
-      overflow-y: auto;
-      border-bottom: 1px solid #333;
-    }
-    .msg {
-      margin: 5px 0;
-      padding: 10px;
-      border-radius: 8px;
-      max-width: 70%;
-    }
-    .user {
-      background: #00f5d4;
-      color: #000;
-      align-self: flex-end;
-    }
-    .ai {
-      background: #6930c3;
-      color: #fff;
-      align-self: flex-start;
-    }
-    #input-area {
-      display: flex;
-      padding: 10px;
-      background: #1a1a1a;
-    }
-    #msg {
-      flex: 1;
-      padding: 10px;
-      border: none;
-      border-radius: 8px;
-    }
-    button {
-      margin-left: 10px;
-      padding: 10px 15px;
-      border: none;
-      border-radius: 8px;
-      background: #00f5d4;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #06d6a0;
-    }
-  </style>
-</head>
-<body>
-  <div id="chat"></div>
-  <div id="input-area">
-    <input id="msg" type="text" placeholder="Type your message..." />
-    <button onclick="sendMsg()">Send</button>
-    <button onclick="toggleVoice()">🎤</button>
-  </div>
+<html>
+  <head><title>Rebecca Test</title></head>
+  <body>
+    <h1>Rebecca Mini App</h1>
+    <input id="msg" placeholder="Say something"/>
+    <button onclick="send()">Send</button>
+    <pre id="out"></pre>
 
-  <script>
-    const chatDiv = document.getElementById("chat");
-    const input = document.getElementById("msg");
-    let recognition;
-    let synth = window.speechSynthesis;
-
-    function appendMsg(text, cls) {
-      const div = document.createElement("div");
-      div.className = "msg " + cls;
-      div.textContent = text;
-      chatDiv.appendChild(div);
-      chatDiv.scrollTop = chatDiv.scrollHeight;
-    }
-
-    async function sendMsg() {
-      const text = input.value.trim();
-      if (!text) return;
-      appendMsg(text, "user");
-      input.value = "";
-
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text }),
-      });
-      const data = await res.json();
-      appendMsg(data.reply, "ai");
-      speak(data.reply);
-    }
-
-    // Voice recognition
-    function toggleVoice() {
-      if (!recognition) {
-        recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        recognition.lang = "en-GB";
-        recognition.continuous = true;
-        recognition.interimResults = false;
-        recognition.onresult = (e) => {
-          const last = e.results[e.results.length - 1][0].transcript;
-          input.value = last;
-          sendMsg();
-        };
+    <script>
+      async function send() {
+        const text = document.getElementById("msg").value;
+        const res = await fetch("/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text })
+        });
+        const data = await res.json();
+        document.getElementById("out").innerText = data.reply || "Error";
       }
-      if (recognition.running) {
-        recognition.stop();
-      } else {
-        recognition.start();
-      }
-    }
-
-    // Text to speech
-    function speak(text) {
-      const utter = new SpeechSynthesisUtterance(text);
-      utter.lang = "en-GB";
-      synth.speak(utter);
-    }
-  </script>
-</body>
+    </script>
+  </body>
 </html>
