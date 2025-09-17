@@ -1,24 +1,23 @@
 const express = require("express");
 const axios = require("axios");
-const cron = require("node-cron");
 const path = require("path");
 
 const app = express();
 app.use(express.json());
 
-// Load env vars
+// Load environment variables
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const OPENAI_KEY = process.env.OPENAI_KEY;
 
 // Serve static files from /public
 app.use(express.static(path.join(__dirname, "public")));
 
-// Root route (loads index.html automatically)
+// Root route
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// Webhook route for Telegram
+// Webhook for Telegram
 app.post("/webhook", async (req, res) => {
   const message = req.body.message;
   if (message && message.text) {
@@ -54,7 +53,7 @@ async function callOpenAI(prompt) {
   return response.data.choices[0].message.content;
 }
 
-// Telegram sender
+// Telegram send
 async function sendTelegram(chatId, text) {
   await axios.post(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
     chat_id: chatId,
